@@ -801,6 +801,13 @@ void QTorrentHandle::prioritize_first_last_piece(int file_index, bool b) const {
   QPair<int, int> extremities = get_file_extremity_pieces (get_torrent_info(), file_index);
   piece_priority(extremities.first, prio);
   piece_priority(extremities.second, prio);
+
+  int index = 0;
+  for(index = 1; index <= 5; ++index) {
+    if ((extremities.second - index) > 0) {
+      torrent_handle::piece_priority(extremities.second - index, prio);
+    }
+  }
 }
 
 void QTorrentHandle::prioritize_first_last_piece(bool b) const {
