@@ -1,3 +1,10 @@
+qbittorrent (3.1.8-2+azuwis1) unstable; urgency=low
+
+  * debian/patches/: Spoof-peer-id
+  * debian/patches/: Prioritize-last-few-pieces
+
+ -- Zhong Jianxin <azuwis@gmail.com>  Tue, 04 Mar 2014 10:11:36 +0800
+
 qbittorrent (3.1.8-2) unstable; urgency=medium
 
   * Explicitly pass path to --with-libboost-lib in order
