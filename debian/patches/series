@@ -1,3 +1,4 @@
 honor-buildflags.patch
 fix-nox-build.patch
 0003-Spoof-peer-id.patch
+0004-Prioritize-last-few-pieces.patch
