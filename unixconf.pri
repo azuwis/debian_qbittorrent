@@ -14,7 +14,8 @@ exists($$OUT_PWD/../conf.pri) {
   QT += dbus
 }
 
-QMAKE_CXXFLAGS += -Wformat -Wformat-security
+QMAKE_CXXFLAGS += -Wformat -Wformat-security $$(CXXFLAGS) $$(CPPFLAGS)
+QMAKE_LFLAGS_RELEASE += $$(LDFLAGS)
 QMAKE_LFLAGS_APP += -rdynamic
 CONFIG += link_pkgconfig
 PKGCONFIG += libtorrent-rasterbar
