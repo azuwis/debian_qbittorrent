@@ -1,0 +1,26 @@
+From: Zhong Jianxin <azuwis@gmail.com>
+Date: Mon, 22 Jul 2013 10:27:07 +0800
+Subject: Prioritize last few pieces
+
+---
+ src/qtlibtorrent/qtorrenthandle.cpp |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/qtlibtorrent/qtorrenthandle.cpp b/src/qtlibtorrent/qtorrenthandle.cpp
+index b608cae..a887e56 100644
+--- a/src/qtlibtorrent/qtorrenthandle.cpp
++++ b/src/qtlibtorrent/qtorrenthandle.cpp
+@@ -801,6 +801,13 @@ void QTorrentHandle::prioritize_first_last_piece(int file_index, bool b) const {
+   QPair<int, int> extremities = get_file_extremity_pieces (get_torrent_info(), file_index);
+   piece_priority(extremities.first, prio);
+   piece_priority(extremities.second, prio);
++
++  int index = 0;
++  for(index = 1; index <= 5; ++index) {
++    if ((extremities.second - index) > 0) {
++      torrent_handle::piece_priority(extremities.second - index, prio);
++    }
++  }
+ }
+ 
+ void QTorrentHandle::prioritize_first_last_piece(bool b) const {
