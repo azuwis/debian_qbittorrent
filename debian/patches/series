@@ -1,3 +1,4 @@
 honor-buildflags.patch
 0002-Spoof-peer-id.patch
 0003-Prioritize-last-few-pieces.patch
+0004-webui-Add-sequential-download-context-menu.patch
