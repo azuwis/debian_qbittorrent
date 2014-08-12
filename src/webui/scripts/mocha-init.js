@@ -203,6 +203,15 @@ initializeWindows = function(){
 		}
 	};
 
+	seqDownloadFN = function() {
+		var h = myTable.selectedIds();
+		if(h.length){
+			h.each(function(hash, index){
+			  new Request({url: 'command/seqDownload', method: 'post', data: {hashes: h.join("|")}}).send();
+			});
+		}
+	};
+
 	['pause','resume', 'recheck'].each(function(item) {
 		addClickEvent(item, function(e){
 			new Event(e).stop();

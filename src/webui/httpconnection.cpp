@@ -634,6 +634,18 @@ void HttpConnection::respondCommand(const QString& command) {
     QBtSession::instance()->recheckTorrent(m_parser.post("hash"));
     return;
   }
+  if (command == "seqDownload") {
+    foreach (const QString &hash, m_parser.post("hashes").split("|")) {
+      QTorrentHandle h = QBtSession::instance()->getTorrentHandle(hash);
+      if (h.is_valid() && h.has_metadata()) {
+        bool was_sequential = h.is_sequential_download();
+        h.set_sequential_download(!was_sequential);
+        if (!was_sequential)
+          h.prioritize_first_last_piece(true);
+      }
+    }
+    return;
+  }
 }
 
 void HttpConnection::decreaseTorrentsPriority(const QStringList &hashes) {
