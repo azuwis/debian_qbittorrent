@@ -81,29 +81,38 @@ static struct { const char *source; const char *comment; } units[] = {
 };
 
 #ifndef DISABLE_GUI
-void misc::shutdownComputer(bool sleep) {
+void misc::shutdownComputer(shutDownAction action) {
 #if defined(Q_WS_X11) && defined(QT_DBUS_LIB)
   // Use dbus to power off / suspend the system
-  if (sleep) {
+  if (action != SHUTDOWN_COMPUTER) {
     // Some recent systems use systemd's logind
     QDBusInterface login1Iface("org.freedesktop.login1", "/org/freedesktop/login1",
                                "org.freedesktop.login1.Manager", QDBusConnection::systemBus());
     if (login1Iface.isValid()) {
-      login1Iface.call("Suspend", false);
+      if (action == SUSPEND_COMPUTER)
+        login1Iface.call("Suspend", false);
+      else
+        login1Iface.call("Hibernate", false);
       return;
     }
     // Else, other recent systems use UPower
     QDBusInterface upowerIface("org.freedesktop.UPower", "/org/freedesktop/UPower",
                                "org.freedesktop.UPower", QDBusConnection::systemBus());
     if (upowerIface.isValid()) {
-      upowerIface.call("Suspend");
+      if (action == SUSPEND_COMPUTER)
+        upowerIface.call("Suspend");
+      else
+        upowerIface.call("Hibernate");
       return;
     }
     // HAL (older systems)
     QDBusInterface halIface("org.freedesktop.Hal", "/org/freedesktop/Hal/devices/computer",
                             "org.freedesktop.Hal.Device.SystemPowerManagement",
                             QDBusConnection::systemBus());
-    halIface.call("Suspend", 5);
+    if (action == SUSPEND_COMPUTER)
+      halIface.call("Suspend", 5);
+    else
+      halIface.call("Hibernate");
   } else {
     // Some recent systems use systemd's logind
     QDBusInterface login1Iface("org.freedesktop.login1", "/org/freedesktop/login1",
@@ -128,7 +137,7 @@ void misc::shutdownComputer(bool sleep) {
 #endif
 #ifdef Q_WS_MAC
   AEEventID EventToSend;
-  if (sleep)
+  if (action != SHUTDOWN_COMPUTER)
     EventToSend = kAESleep;
   else
     EventToSend = kAEShutDown;
@@ -189,8 +198,10 @@ void misc::shutdownComputer(bool sleep) {
   if (GetLastError() != ERROR_SUCCESS)
     return;
 
-  if (sleep)
+  if (action == SUSPEND_COMPUTER)
     SetSuspendState(false, false, false);
+  else if (action == HIBERNATE_COMPUTER)
+    SetSuspendState(true, false, false);
   else
     InitiateSystemShutdownA(0, QCoreApplication::translate("misc", "qBittorrent will shutdown the computer now because all downloads are complete.").toLocal8Bit().data(), 10, true, false);
 
@@ -248,7 +259,9 @@ int misc::pythonVersion() {
 // use Binary prefix standards from IEC 60027-2
 // see http://en.wikipedia.org/wiki/Kilobyte
 // value must be given in bytes
-QString misc::friendlyUnit(qreal val, bool is_speed) {
+// FIXME: Remove the 'webui' variable, when the webui API is reworked
+// to send numbers instead of strings with suffixes
+QString misc::friendlyUnit(qreal val, bool is_speed, bool webui) {
   if (val < 0)
     return QCoreApplication::translate("misc", "Unknown", "Unknown (size)");
   int i = 0;
@@ -258,7 +271,7 @@ QString misc::friendlyUnit(qreal val, bool is_speed) {
   if (i == 0)
     ret = QString::number((long)val) + " " + QCoreApplication::translate("misc", units[0].source, units[0].comment);
   else
-    ret = accurateDoubleToString(val, 1) + " " + QCoreApplication::translate("misc", units[i].source, units[i].comment);
+    ret = accurateDoubleToString(val, 1, !webui) + " " + QCoreApplication::translate("misc", units[i].source, units[i].comment);
   if (is_speed)
     ret += QCoreApplication::translate("misc", "/s", "per second");
   return ret;
@@ -543,15 +556,29 @@ QString misc::toQString(time_t t)
 bool misc::naturalSort(QString left, QString right, bool &result) { // uses lessThan comparison
   // Return value indicates if functions was successful
   // result argument will contain actual comparison result if function was successful
+  int posL = 0;
+  int posR = 0;
   do {
-    int posL = left.indexOf(QRegExp("[0-9]"));
-    int posR = right.indexOf(QRegExp("[0-9]"));
-    if (posL == -1 || posR == -1)
-      break; // No data
-    else if (posL != posR)
-      break; // Digit positions mismatch
-    else  if (left.left(posL) != right.left(posR))
-      break; // Strings' subsets before digit do not match
+    for (;;) {
+      if (posL == left.size() || posR == right.size())
+        return false; // No data
+
+      QChar leftChar = left.at(posL);
+      QChar rightChar = right.at(posR);
+      bool leftCharIsDigit = leftChar.isDigit();
+      bool rightCharIsDigit = rightChar.isDigit();
+      if (leftCharIsDigit != rightCharIsDigit)
+        return false; // Digit positions mismatch
+
+      if (leftCharIsDigit)
+        break; // Both are digit, break this loop and compare numbers
+
+      if (leftChar != rightChar)
+         return false; // Strings' subsets before digit do not match
+
+      ++posL;
+      ++posR;
+    }
 
     QString temp;
     while (posL < left.size()) {
@@ -580,8 +607,6 @@ bool misc::naturalSort(QString left, QString right, bool &result) { // uses less
 
     // Strings + digits do match and we haven't hit string end
     // Do another round
-    left.remove(0, posL);
-    right.remove(0, posR);
 
   } while (true);
 
@@ -589,7 +614,9 @@ bool misc::naturalSort(QString left, QString right, bool &result) { // uses less
 }
 #endif
 
-QString misc::accurateDoubleToString(const double &n, const int &precision) {
+// FIXME: Remove the 'localized' variable, when the webui API is reworked
+// to send numbers instead of strings with suffixes
+QString misc::accurateDoubleToString(const double &n, const int &precision, bool localized) {
   /* HACK because QString rounds up. Eg QString::number(0.999*100.0, 'f' ,1) == 99.9
   ** but QString::number(0.9999*100.0, 'f' ,1) == 100.0 The problem manifests when
   ** the number has more digits after the decimal than we want AND the digit after
@@ -597,5 +624,8 @@ QString misc::accurateDoubleToString(const double &n, const int &precision) {
   ** precision we add an extra 0 behind 1 in the below algorithm. */
 
   double prec = std::pow(10.0, precision);
-  return QLocale::system().toString(std::floor(n*prec)/prec, 'f', precision);
+  if (localized)
+    return QLocale::system().toString(std::floor(n*prec)/prec, 'f', precision);
+  else
+    return QString::number(std::floor(n*prec)/prec, 'f', precision);
 }
