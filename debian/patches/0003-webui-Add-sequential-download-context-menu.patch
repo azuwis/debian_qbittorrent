@@ -1,0 +1,80 @@
+From: Zhong Jianxin <azuwis@gmail.com>
+Date: Tue, 12 Aug 2014 16:02:39 +0800
+Subject: webui: Add sequential download context menu
+
+---
+ src/webui/html/index.html        |    1 +
+ src/webui/html/transferlist.html |    3 +++
+ src/webui/httpconnection.cpp     |   12 ++++++++++++
+ src/webui/scripts/mocha-init.js  |    9 +++++++++
+ 4 files changed, 25 insertions(+)
+
+diff --git a/src/webui/html/index.html b/src/webui/html/index.html
+index 44f0cae..9e27177 100644
+--- a/src/webui/html/index.html
++++ b/src/webui/html/index.html
+@@ -97,6 +97,7 @@
+ 		<li><a href="#prioBottom"><img src="theme/go-bottom"/> _(Move to bottom)</a></li>
+ 	</ul>
+ 	</li>
++	<li><a href="#seqDownload">_(Sequential download)</a>
+ 	<li class="separator"><a href="#DownloadLimit"><img src="images/skin/download.png"/> _(Limit download rate...)</a></li>
+ 	<li><a href="#UploadLimit"><img src="images/skin/seeding.png"/> _(Limit upload rate...)</a></li>
+ 	<li class="separator"><a href="#ForceRecheck"><img src="theme/document-edit-verify"/>  _(Force recheck)</a></li>
+diff --git a/src/webui/html/transferlist.html b/src/webui/html/transferlist.html
+index b542544..8019063 100644
+--- a/src/webui/html/transferlist.html
++++ b/src/webui/html/transferlist.html
+@@ -57,6 +57,9 @@
+                         },
+                         DownloadLimit: function(element, red) {
+                                 downloadLimitFN();
++                        },
++                        seqDownload: function(element, ref) {
++                                seqDownloadFN();
+                         }
+ 		},
+ 		offsets: { x:-15, y:2 }
+diff --git a/src/webui/httpconnection.cpp b/src/webui/httpconnection.cpp
+index 092b749..a332234 100644
+--- a/src/webui/httpconnection.cpp
++++ b/src/webui/httpconnection.cpp
+@@ -634,6 +634,18 @@ void HttpConnection::respondCommand(const QString& command) {
+     QBtSession::instance()->recheckTorrent(m_parser.post("hash"));
+     return;
+   }
++  if (command == "seqDownload") {
++    foreach (const QString &hash, m_parser.post("hashes").split("|")) {
++      QTorrentHandle h = QBtSession::instance()->getTorrentHandle(hash);
++      if (h.is_valid() && h.has_metadata()) {
++        bool was_sequential = h.is_sequential_download();
++        h.set_sequential_download(!was_sequential);
++        if (!was_sequential)
++          h.prioritize_first_last_piece(true);
++      }
++    }
++    return;
++  }
+ }
+ 
+ void HttpConnection::decreaseTorrentsPriority(const QStringList &hashes) {
+diff --git a/src/webui/scripts/mocha-init.js b/src/webui/scripts/mocha-init.js
+index 827e05c..3b20bf2 100644
+--- a/src/webui/scripts/mocha-init.js
++++ b/src/webui/scripts/mocha-init.js
+@@ -203,6 +203,15 @@ initializeWindows = function(){
+ 		}
+ 	};
+ 
++	seqDownloadFN = function() {
++		var h = myTable.selectedIds();
++		if(h.length){
++			h.each(function(hash, index){
++			  new Request({url: 'command/seqDownload', method: 'post', data: {hashes: h.join("|")}}).send();
++			});
++		}
++	};
++
+ 	['pause','resume', 'recheck'].each(function(item) {
+ 		addClickEvent(item, function(e){
+ 			new Event(e).stop();
