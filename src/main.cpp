@@ -187,7 +187,7 @@ void sigabrtHandler(int) {
 
 // Main
 int main(int argc, char *argv[]) {
-#ifdef Q_OS_MACX
+#if defined(Q_OS_MACX) && !defined(DISABLE_GUI)
   if ( QSysInfo::MacintoshVersion > QSysInfo::MV_10_8 )
   {
     // fix Mac OS X 10.9 (mavericks) font issue
@@ -228,9 +228,14 @@ int main(int argc, char *argv[]) {
     QStringList torrentCmdLine = app.arguments();
     //Pass program parameters if any
     QString message;
+    QFileInfo torrentPath;
     for (int a = 1; a < torrentCmdLine.size(); ++a) {
       if (torrentCmdLine[a].startsWith("--")) continue;
-      message += torrentCmdLine[a];
+      torrentPath.setFile(torrentCmdLine[a]);
+      if (torrentPath.exists())
+        message += torrentPath.absoluteFilePath();
+      else
+        message += torrentCmdLine[a];
       if (a < argc-1)
         message += "|";
     }

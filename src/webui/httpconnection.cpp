@@ -166,7 +166,7 @@ void HttpConnection::translateDocument(QString& data) {
 
       QString translation = word;
       if (isTranslationNeeded) {
-        int context_index = 0;
+        size_t context_index = 0;
         while(context_index < context_count && translation == word) {
           translation = qApp->translate(contexts[context_index].c_str(), word.constData(), 0, QCoreApplication::UnicodeUTF8, 1);
           ++context_index;
@@ -193,6 +193,7 @@ void HttpConnection::respond() {
     if (nb_fail >= MAX_AUTH_FAILED_ATTEMPTS) {
       m_generator.setStatusLine(403, "Forbidden");
       m_generator.setMessage(tr("Your IP address has been banned after too many failed authentication attempts."));
+      m_generator.setContentType("text/plain; charset=utf-8");
       m_generator.setContentEncoding(m_parser.acceptsEncoding());
       write();
       return;
