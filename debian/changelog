@@ -1,3 +1,11 @@
+qbittorrent (3.1.11-1+brew1) unstable; urgency=low
+
+  * debian/patches/: Spoof-peer-id
+  * debian/patches/: webui-Add-sequential-download-context-menu
+  * debian/patches/: Prioritize-last-pieces-of-16M
+
+ -- Zhong Jianxin <azuwis@gmail.com>  Tue, 06 Jan 2015 11:07:02 +0800
+
 qbittorrent (3.1.11-1) unstable; urgency=medium
 
   * New upstream release.
