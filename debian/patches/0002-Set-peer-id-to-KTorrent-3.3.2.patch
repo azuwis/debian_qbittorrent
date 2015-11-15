@@ -1,0 +1,38 @@
+From: Zhong Jianxin <azuwis@gmail.com>
+Date: Wed, 11 Nov 2015 00:18:09 +0800
+Subject: Set peer id to KTorrent/3.3.2
+
+---
+ src/core/qtlibtorrent/qbtsession.cpp | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/core/qtlibtorrent/qbtsession.cpp b/src/core/qtlibtorrent/qbtsession.cpp
+index 2833198..84a27d5 100644
+--- a/src/core/qtlibtorrent/qbtsession.cpp
++++ b/src/core/qtlibtorrent/qbtsession.cpp
+@@ -123,11 +123,11 @@ QBtSession::QBtSession()
+     Preferences* const pref = Preferences::instance();
+     // Creating Bittorrent session
+     QList<int> version;
+-    version << VERSION_MAJOR;
+-    version << VERSION_MINOR;
+-    version << VERSION_BUGFIX;
+-    version << VERSION_BUILD;
+-    const QString peer_id = "qB";
++    version << 3;
++    version << 3;
++    version << 2;
++    version << 0;
++    const QString peer_id = "KT";
+     // Construct session
+     s = new session(fingerprint(peer_id.toLocal8Bit().constData(), version.at(0), version.at(1), version.at(2), version.at(3)), 0);
+     //std::cout << "Peer ID: " << fingerprint(peer_id.toLocal8Bit().constData(), version.at(0), version.at(1), version.at(2), version.at(3)).to_string() << std::endl;
+@@ -413,7 +413,7 @@ void QBtSession::configureSession() {
+     }
+     // * Session settings
+     session_settings sessionSettings = s->settings();
+-    sessionSettings.user_agent = "qBittorrent " VERSION;
++    sessionSettings.user_agent = "KTorrent/3.3.2";
+     logger->addMessage(tr("HTTP User-Agent is %1").arg(misc::toQString(sessionSettings.user_agent)));
+ 
+     sessionSettings.apply_ip_filter_to_trackers = pref->isFilteringTrackerEnabled();
